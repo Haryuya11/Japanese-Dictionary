@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.japanesedictionary"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -92,6 +92,10 @@ dependencies {
     // Paper
     implementation(libs.accompanist.pager)
     implementation(libs.accompanist.pager.indicators)
+
+    // StAX API
+    implementation(libs.stax.api)
+    implementation(libs.woodstox.core.asl)
 
 
     testImplementation(libs.junit)
