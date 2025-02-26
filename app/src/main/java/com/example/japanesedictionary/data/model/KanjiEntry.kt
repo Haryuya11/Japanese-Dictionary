@@ -1,6 +1,8 @@
 package com.example.japanesedictionary.data.model
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "kanji_entries")
@@ -13,10 +15,19 @@ data class KanjiEntry(
     val fileSvgName: String? // File name of the SVG image
 )
 
-@Entity(tableName = "kanji_readings")
+@Entity(
+    tableName = "kanji_readings",
+    foreignKeys = [ForeignKey(
+        entity = KanjiEntry::class,
+        parentColumns = ["literal"],
+        childColumns = ["kanjiLiteral"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [Index(value = ["kanjiLiteral"])] // Thêm chỉ mục cho kanjiLiteral
+)
 data class KanjiReading(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val kanjiLiteral: String, // Kanji character
-    val reading: String, // Reading
-    val type: String // Type of reading (ja_on or ja_kun)
+    val kanjiLiteral: String,
+    val reading: String,
+    val type: String
 )

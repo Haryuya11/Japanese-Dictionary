@@ -1,24 +1,44 @@
-    package com.example.japanesedictionary.data.model
+package com.example.japanesedictionary.data.model
 
-    import androidx.room.Entity
-    import androidx.room.PrimaryKey
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
+import androidx.room.PrimaryKey
 
 
-    @Entity(tableName = "kanji")
-    data class Kanji(
-        @PrimaryKey(autoGenerate = true) val id: Int = 0,
-        val entryId: String, // Id của từ
-        val kanji: String // Chữ Hán
-    )
+@Entity(
+    tableName = "kanji",
+    foreignKeys = [ForeignKey(
+        entity = DictionaryEntry::class,
+        parentColumns = ["id"],
+        childColumns = ["entryId"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [Index(value = ["entryId"])] // Thêm chỉ mục cho entryId
+)
+data class Kanji(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val entryId: String,
+    val kanji: String
+)
 
-    @Entity(tableName = "reading")
-    data class Reading(
-        @PrimaryKey(autoGenerate = true) val id: Int = 0,
-        val entryId: String, // Id của từ
-        val reading: String // Phát âm
-    )
+@Entity(
+    tableName = "reading",
+    foreignKeys = [ForeignKey(
+        entity = DictionaryEntry::class,
+        parentColumns = ["id"],
+        childColumns = ["entryId"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [Index(value = ["entryId"])] // Thêm chỉ mục cho entryId
+)
+data class Reading(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val entryId: String,
+    val reading: String
+)
 
-    @Entity(tableName = "dictionary_entries")
-    data class DictionaryEntry(
-        @PrimaryKey val id: String // Id của từ
-    )
+@Entity(tableName = "dictionary_entries")
+data class DictionaryEntry(
+    @PrimaryKey val id: String // Id của từ
+)

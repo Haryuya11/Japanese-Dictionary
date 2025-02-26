@@ -12,6 +12,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -24,9 +26,9 @@ import com.example.japanesedictionary.utils.XmlToRoomImporter
 fun LoadingScreen(context: Context, onLoadingFinished: (Boolean, Int) -> Unit) {
     val phaseWeights = listOf(0.1f, 0.4f, 0.1f, 0.4f)
     val totalEntries = listOf(210694, 210694, 13108, 13108)
-    var currentPhase by remember { mutableStateOf(0) }
-    var currentProgress by remember { mutableStateOf(0f) }
-    var currentCount by remember { mutableStateOf(0) }
+    var currentPhase by remember { mutableIntStateOf(0) }
+    var currentProgress by remember { mutableFloatStateOf(0f) }
+    var currentCount by remember { mutableIntStateOf(0) }
     var total by remember { mutableStateOf(1) }
 
     LaunchedEffect(Unit) {
