@@ -111,19 +111,6 @@ interface DictionaryDao {
     )
     suspend fun getEntryIdsContainingKanji(targetKanji: String, reading: String): List<String>
 
-    // **Search History Queries**
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertSearchHistory(searchHistory: SearchHistory)
-
-    @Query("SELECT * FROM search_history ORDER BY id DESC LIMIT 50")
-    suspend fun getSearchHistory(): List<SearchHistory>
-
-    @Query("DELETE FROM search_history")
-    suspend fun clearSearchHistory()
-
-    @Query("DELETE FROM search_history WHERE `query` IN (:queries)")
-    suspend fun deleteSearchHistory(queries: List<String>)
-
     // **Field Queries**
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertField(field: Field): Long
@@ -160,7 +147,8 @@ interface DictionaryDao {
     INNER JOIN dictionarygroupcrossref 
     ON dictionary_entries.id = dictionarygroupcrossref.entryId 
     WHERE dictionarygroupcrossref.groupId = :groupId
-""")
+"""
+    )
     fun getEntriesForGroup(groupId: Int): LiveData<List<DictionaryEntry>>
 
     @Transaction

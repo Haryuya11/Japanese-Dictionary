@@ -16,7 +16,6 @@ import com.example.japanesedictionary.data.model.KanjiEntry
 import com.example.japanesedictionary.data.model.KanjiReading
 import com.example.japanesedictionary.data.model.Reading
 import com.example.japanesedictionary.data.model.SaveGroups
-import com.example.japanesedictionary.data.model.SearchHistory
 import com.example.japanesedictionary.data.model.Sense
 import com.example.japanesedictionary.data.model.SenseFieldCrossRef
 import com.example.japanesedictionary.utils.Converters
@@ -30,7 +29,6 @@ import com.example.japanesedictionary.utils.Converters
         Example::class,
         Field::class,
         SenseFieldCrossRef::class,
-        SearchHistory::class,
         KanjiEntry::class,
         KanjiReading::class,
         SaveGroups::class,

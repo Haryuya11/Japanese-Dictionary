@@ -47,7 +47,6 @@ fun SaveGroupsScreen(
     var showCreateGroupDialog by remember { mutableStateOf(false) }
     var showSortOptions by remember { mutableStateOf(false) }
     val currentSortOption by dictionaryViewModel.currentSortOption.observeAsState(SortOption.NAME_ASC)
-
     Scaffold(
         topBar = {
             TopAppBar(

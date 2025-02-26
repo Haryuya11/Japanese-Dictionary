@@ -10,10 +10,13 @@ import com.example.japanesedictionary.utils.isKanji
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
+import android.content.Context
+import androidx.core.content.edit
+import org.json.JSONArray
 
 class DictionaryViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = DictionaryDatabase.getDatabase(application).dictionaryDao()
+    private val sharedPreferences = application.getSharedPreferences("search_history", Context.MODE_PRIVATE)
 
     var query = mutableStateOf("")
     var searchResults = mutableStateOf(listOf<DictionaryEntry>())
@@ -24,7 +27,6 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
     var kanjiSet = mutableStateOf(setOf<Char>())
     var isSelectionMode = mutableStateOf(false)
     var selectedItems = mutableStateListOf<String>()
-
 
     init {
         loadSearchHistory()
@@ -157,12 +159,14 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
         return withContext(Dispatchers.IO) { dao.getExamples(senseId) }
     }
 
-    // **Search History Functions**
+    // **Search History Functions với Async Storage**
     fun addSearchHistory(query: String) {
         if (query.isNotEmpty() && !searchHistory.value.contains(query)) {
             viewModelScope.launch {
                 withContext(Dispatchers.IO) {
-                    dao.insertSearchHistory(SearchHistory(query = query))
+                    val history = getSearchHistoryFromStorage().toMutableList()
+                    history.add(0, query) // Thêm vào đầu danh sách
+                    saveSearchHistoryToStorage(history)
                     loadSearchHistory()
                 }
             }
@@ -171,21 +175,35 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
 
     private fun loadSearchHistory() {
         viewModelScope.launch {
-            val history = withContext(Dispatchers.IO) { dao.getSearchHistory() }
-            searchHistory.value = history.map { it.query }
+            val history = withContext(Dispatchers.IO) { getSearchHistoryFromStorage() }
+            searchHistory.value = history
         }
     }
 
     fun clearSearchHistory() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                dao.clearSearchHistory()
-                searchHistory.value = emptyList()
+                saveSearchHistoryToStorage(emptyList())
                 loadSearchHistory()
             }
         }
     }
 
+    private fun getSearchHistoryFromStorage(): List<String> {
+        val historyJson = sharedPreferences.getString("history", "[]") ?: "[]"
+        val historyArray = JSONArray(historyJson)
+        val historyList = mutableListOf<String>()
+        for (i in 0 until historyArray.length()) {
+            historyList.add(historyArray.getString(i))
+        }
+        return historyList.take(50) // Giới hạn 50 mục
+    }
+
+    private fun saveSearchHistoryToStorage(history: List<String>) {
+        val historyArray = JSONArray()
+        history.take(50).forEach { historyArray.put(it) } // Giới hạn 50 mục
+        sharedPreferences.edit { putString("history", historyArray.toString()) }
+    }
 
     // **Search Mode Functions**
     fun saveSearchMode(mode: String) {
@@ -246,7 +264,7 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
             SortOption.NAME_DESC -> dao.getAllGroupsSortedByNameDesc()
             SortOption.DATE_ASC -> dao.getAllGroupsSortedByDateAsc()
             SortOption.DATE_DESC -> dao.getAllGroupsSortedByDateDesc()
-            null -> dao.getAllGroupsSortedByNameAsc()
+            else -> dao.getAllGroupsSortedByNameAsc()
         }
     }
 
@@ -290,9 +308,7 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    /**Selection Mode Functions
-     *
-     */
+    // **Selection Mode Functions**
     fun toggleSelection(query: String) {
         if (selectedItems.contains(query)) {
             selectedItems.remove(query)
@@ -320,7 +336,9 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
     fun deleteSelectedItems() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                dao.deleteSearchHistory(selectedItems.toList())
+                val history = getSearchHistoryFromStorage().toMutableList()
+                history.removeAll(selectedItems)
+                saveSearchHistoryToStorage(history)
             }
             selectedItems.clear()
             isSelectionMode.value = false
