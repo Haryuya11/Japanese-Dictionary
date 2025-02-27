@@ -12,11 +12,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.content.Context
 import androidx.core.content.edit
+import com.example.japanesedictionary.utils.convertKatakanaToHiragana
+import com.example.japanesedictionary.utils.isKatakana
+import com.example.japanesedictionary.utils.romajiToHiragana
 import org.json.JSONArray
 
 class DictionaryViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = DictionaryDatabase.getDatabase(application).dictionaryDao()
-    private val sharedPreferences = application.getSharedPreferences("search_history", Context.MODE_PRIVATE)
+    private val sharedPreferences =
+        application.getSharedPreferences("search_history", Context.MODE_PRIVATE)
 
     var query = mutableStateOf("")
     var searchResults = mutableStateOf(listOf<DictionaryEntry>())
@@ -43,24 +47,29 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
             if (searchMode.value == "ja") {
                 searchJapaneseMode(query)
             } else if (searchMode.value == "en") {
-                searchEnglishWordMode(query)
+                searchEnglishMode(query)
             }
         }
     }
 
     private suspend fun searchJapaneseMode(query: String) {
         withContext(Dispatchers.IO) {
-            val exactMatches = dao.searchExactMatches(query)
-            val relatedMatches = dao.searchRelatedMatches("%$query%", query)
-            searchResults.value = exactMatches + relatedMatches
+            val processedQuery = when {
+                query.all { it in 'a'..'z' || it in 'A'..'Z' } -> query.romajiToHiragana()
+                query.any { it.isKatakana() } -> query.convertKatakanaToHiragana()
+                else -> query
+            }
+            val exactResults = dao.searchExactJapaneseFTS(processedQuery)
+            val relatedResults = dao.searchRelatedJapanese(processedQuery)
+            searchResults.value = exactResults + relatedResults
         }
     }
 
-    private suspend fun searchEnglishWordMode(query: String) {
+    private suspend fun searchEnglishMode(query: String) {
         withContext(Dispatchers.IO) {
-            val exactMatches = dao.searchExactEnglishMeaning(query)
-            val relatedMatches = dao.searchRelatedEnglishMeaning("%$query%", query)
-            searchResults.value = exactMatches + relatedMatches
+            val exactResults = dao.searchExactEnglishFTS(query)
+            val relatedResults = dao.searchRelatedEnglish(query)
+            searchResults.value = exactResults + relatedResults
         }
     }
 
@@ -96,9 +105,15 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
 
     private suspend fun fetchJapaneseSuggestionsMode(query: String) {
         withContext(Dispatchers.IO) {
-            val exactMatches = dao.searchExactMatches(query)
-            val relatedMatches = dao.searchRelatedMatches("%$query%", query)
-            suggestions.value = (exactMatches + relatedMatches).map { entry ->
+            val processedQuery = when {
+                query.all { it in 'a'..'z' || it in 'A'..'Z' } -> query.romajiToHiragana()
+                query.any { it.isKatakana() } -> query.convertKatakanaToHiragana()
+                else -> query
+            }
+            val exactResults = dao.searchExactJapaneseFTS(processedQuery)
+            val relatedResults = dao.searchRelatedJapanese(processedQuery)
+            val entries = exactResults + relatedResults
+            suggestions.value = entries.map { entry ->
                 val kanji = dao.getKanji(entry.id).firstOrNull()?.kanji
                 val reading = dao.getReading(entry.id).firstOrNull()?.reading
                 val meaning = dao.getSenses(entry.id).flatMap { it.glosses }.joinToString(", ")
@@ -109,9 +124,9 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
 
     private suspend fun fetchEnglishSuggestionsMode(query: String) {
         withContext(Dispatchers.IO) {
-            val exactMatches = dao.searchExactEnglishMeaning(query)
-            val relatedMatches = dao.searchRelatedEnglishMeaning("%$query%", query)
-            val entries = exactMatches + relatedMatches
+            val exactResults = dao.searchExactEnglishFTS(query)
+            val relatedResults = dao.searchRelatedEnglish(query)
+            val entries = exactResults + relatedResults
             suggestions.value = entries.map { entry ->
                 val kanji = dao.getKanji(entry.id).firstOrNull()?.kanji
                 val reading = dao.getReading(entry.id).firstOrNull()?.reading
@@ -345,4 +360,6 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
             loadSearchHistory()
         }
     }
+
+
 }

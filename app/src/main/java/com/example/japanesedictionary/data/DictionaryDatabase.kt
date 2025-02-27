@@ -5,19 +5,11 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.japanesedictionary.data.dao.DictionaryDao
 import com.example.japanesedictionary.data.dao.KanjiDao
-import com.example.japanesedictionary.data.model.DictionaryEntry
-import com.example.japanesedictionary.data.model.DictionaryGroupCrossRef
-import com.example.japanesedictionary.data.model.Example
-import com.example.japanesedictionary.data.model.Field
-import com.example.japanesedictionary.data.model.Kanji
-import com.example.japanesedictionary.data.model.KanjiEntry
-import com.example.japanesedictionary.data.model.KanjiReading
-import com.example.japanesedictionary.data.model.Reading
-import com.example.japanesedictionary.data.model.SaveGroups
-import com.example.japanesedictionary.data.model.Sense
-import com.example.japanesedictionary.data.model.SenseFieldCrossRef
+import com.example.japanesedictionary.data.model.*
 import com.example.japanesedictionary.utils.Converters
 
 @Database(
@@ -32,9 +24,10 @@ import com.example.japanesedictionary.utils.Converters
         KanjiEntry::class,
         KanjiReading::class,
         SaveGroups::class,
-        DictionaryGroupCrossRef::class
+        DictionaryGroupCrossRef::class,
+        DictionaryFTS::class // Added FTS entity
     ],
-    version = 1,
+    version = 3, // Updated from 2 to 3
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -45,15 +38,47 @@ abstract class DictionaryDatabase : RoomDatabase() {
     companion object {
         @Volatile
         private var INSTANCE: DictionaryDatabase? = null
+
         fun getDatabase(context: Context): DictionaryDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     DictionaryDatabase::class.java,
                     "dictionary_database"
-                ).build()
+                )
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3) // Added new migration
+                    .build()
                 INSTANCE = instance
                 instance
+            }
+        }
+
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE VIRTUAL TABLE dictionary_fts USING fts4(
+                        entryId TEXT,
+                        kanji TEXT,
+                        reading TEXT,
+                        glosses TEXT,
+                        tokenize=simple
+                    )
+                """)
+                db.execSQL("""
+                    INSERT INTO dictionary_fts (entryId, kanji, reading, glosses)
+                    SELECT de.id, k.kanji, r.reading, s.glosses
+                    FROM dictionary_entries de
+                    LEFT JOIN kanji k ON de.id = k.entryId
+                    LEFT JOIN reading r ON de.id = r.entryId
+                    LEFT JOIN senses s ON de.id = s.entryId
+                """)
+            }
+        }
+
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Drop the old FTS table; Room will recreate it based on DictionaryFTS entity
+                db.execSQL("DROP TABLE IF EXISTS dictionary_fts")
             }
         }
     }

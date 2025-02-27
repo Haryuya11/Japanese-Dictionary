@@ -197,4 +197,133 @@ interface DictionaryDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertSenseFieldCrossRefs(crossRefs: List<SenseFieldCrossRef>)
+
+    // **FTS Search Queries**
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertFTSEntries(entries: List<DictionaryFTS>)
+
+    // Updated FTS Search Queries
+    @Query(
+        """
+        SELECT * FROM dictionary_entries
+        WHERE id IN (
+            SELECT entryId FROM dictionary_fts 
+            WHERE kanji MATCH :query OR reading_hiragana MATCH :query
+        )
+    """
+    )
+    suspend fun searchFTS(query: String): List<DictionaryEntry>
+
+    @Query(
+        """
+        SELECT * FROM dictionary_entries
+        WHERE id IN (
+            SELECT entryId FROM dictionary_fts 
+            WHERE kanji MATCH :query
+        )
+    """
+    )
+    suspend fun searchKanjiFTS(query: String): List<DictionaryEntry>
+
+    @Query(
+        """
+        SELECT * FROM dictionary_entries
+        WHERE id IN (
+            SELECT entryId FROM dictionary_fts 
+            WHERE reading_hiragana MATCH :query
+        )
+    """
+    )
+    suspend fun searchReadingFTS(query: String): List<DictionaryEntry>
+
+    @Query(
+        """
+        SELECT * FROM dictionary_entries
+        WHERE id IN (
+            SELECT entryId FROM dictionary_fts 
+            WHERE glosses MATCH :query
+        )
+    """
+    )
+    suspend fun searchGlossesFTS(query: String): List<DictionaryEntry>
+
+    @Query(
+        """
+        SELECT * FROM dictionary_entries
+        WHERE id IN (
+            SELECT entryId FROM kanji WHERE kanji = :query
+            UNION
+            SELECT entryId FROM reading WHERE reading = :query
+        )
+    """
+    )
+    suspend fun searchExactJapanese(query: String): List<DictionaryEntry>
+
+    // Related search for Japanese mode (containing query but not exact)
+    @Query(
+        """
+        SELECT * FROM dictionary_entries
+        WHERE id IN (
+            SELECT entryId FROM kanji WHERE kanji LIKE '%' || :query || '%' 
+            UNION
+            SELECT entryId FROM reading WHERE reading LIKE '%' || :query || '%'
+        )
+        AND id NOT IN (
+            SELECT entryId FROM kanji WHERE kanji = :query
+            UNION
+            SELECT entryId FROM reading WHERE reading = :query
+        )
+        LIMIT 50
+    """
+    )
+    suspend fun searchRelatedJapanese(query: String): List<DictionaryEntry>
+
+    // Exact search for English mode (exact gloss match)
+    @Query(
+        """
+        SELECT * FROM dictionary_entries
+        WHERE id IN (
+            SELECT entryId FROM senses WHERE glosses = :query
+        )
+    """
+    )
+    suspend fun searchExactEnglish(query: String): List<DictionaryEntry>
+
+    // Related search for English mode (containing query but not exact)
+    @Query(
+        """
+        SELECT * FROM dictionary_entries
+        WHERE id IN (
+            SELECT entryId FROM senses WHERE glosses LIKE '%' || :query || '%'
+        )
+        AND id NOT IN (
+            SELECT entryId FROM senses WHERE glosses = :query
+        )
+        LIMIT 50
+    """
+    )
+    suspend fun searchRelatedEnglish(query: String): List<DictionaryEntry>
+
+    // **Truy vấn FTS cho kết quả khớp chính xác**
+    @Query(
+        """
+        SELECT * FROM dictionary_entries
+        WHERE id IN (
+            SELECT entryId FROM dictionary_fts 
+            WHERE kanji MATCH :query OR reading_hiragana MATCH :query
+        )
+    """
+    )
+    suspend fun searchExactJapaneseFTS(query: String): List<DictionaryEntry>
+
+    @Query(
+        """
+        SELECT * FROM dictionary_entries
+        WHERE id IN (
+            SELECT entryId FROM dictionary_fts 
+            WHERE glosses MATCH :query
+        )
+    """
+    )
+    suspend fun searchExactEnglishFTS(query: String): List<DictionaryEntry>
 }

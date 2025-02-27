@@ -8,6 +8,7 @@ import com.example.japanesedictionary.data.DictionaryDatabase
 import com.example.japanesedictionary.data.dao.DictionaryDao
 import com.example.japanesedictionary.data.dao.KanjiDao
 import com.example.japanesedictionary.data.model.DictionaryEntry
+import com.example.japanesedictionary.data.model.DictionaryFTS
 import com.example.japanesedictionary.data.model.Example
 import com.example.japanesedictionary.data.model.Field
 import com.example.japanesedictionary.data.model.Kanji
@@ -57,6 +58,8 @@ object XmlToRoomImporter {
     private fun getDynamicBatchSize(): Int {
         val maxMemoryMB = Runtime.getRuntime().maxMemory() / (1024 * 1024)
         return when {
+            maxMemoryMB >= 1024 -> 16000  // Nếu heap ≥ 1GB
+            maxMemoryMB >= 512 -> 8000  // Nếu heap ≥ 512MB
             maxMemoryMB >= 256 -> 4000  // Nếu heap ≥ 256MB, tăng batch size lên cao hơn
             maxMemoryMB >= 128 -> 2000  // Nếu heap từ 128MB đến 255MB
             maxMemoryMB >= 64  -> 1000  // Nếu heap từ 64MB đến 127MB
@@ -523,6 +526,26 @@ object XmlToRoomImporter {
                 crossRefs.add(SenseFieldCrossRef(senseId.toInt(), fieldId))
             }
             dao.insertSenseFieldCrossRefs(crossRefs)
+
+            // Insert into FTS table
+            val ftsEntries = entries.map { parsedEntry ->
+                val kanjiText = parsedEntry.kanjiList.joinToString(" ")
+                val readingText = parsedEntry.readingList.joinToString(" ")
+                val readingHiraganaText = parsedEntry.readingList
+                    .map { it.convertKatakanaToHiragana() }
+                    .joinToString(" ")
+                val glossesText = parsedEntry.senses
+                    .flatMap { it.glosses }
+                    .joinToString(" ")
+                DictionaryFTS(
+                    entryId = parsedEntry.id,
+                    kanji = kanjiText,
+                    reading = readingText,
+                    reading_hiragana = readingHiraganaText,
+                    glosses = glossesText
+                )
+            }
+            dao.insertFTSEntries(ftsEntries)
         }
     }
 
