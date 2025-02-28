@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,7 +44,7 @@ fun SearchResultsScreen(
     viewModel: DictionaryViewModel = viewModel(),
     mainActivity: MainActivity
 ) {
-    val searchResults by remember { viewModel.searchResults }
+    val searchResults by viewModel.searchResults.collectAsState()
     var relatedWords by remember { mutableStateOf(listOf<DictionaryEntry>()) }
     var fieldsForSenses by remember { mutableStateOf<Map<Int, List<String>>>(emptyMap()) }
     LaunchedEffect(query) {

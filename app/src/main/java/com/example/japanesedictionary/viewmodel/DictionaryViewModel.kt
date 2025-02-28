@@ -16,6 +16,8 @@ import com.example.japanesedictionary.utils.convertKatakanaToHiragana
 import com.example.japanesedictionary.utils.isKatakana
 import com.example.japanesedictionary.utils.romajiToHiragana
 import com.example.japanesedictionary.utils.tokenizeJapaneseText
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.json.JSONArray
 
 /**
@@ -25,16 +27,25 @@ import org.json.JSONArray
 class DictionaryViewModel(application: Application) : AndroidViewModel(application) {
     // Database access object (DAO) for interacting with the dictionary database
     private val dao = DictionaryDatabase.getDatabase(application).dictionaryDao()
+
+    // Job instances for handling search and suggestion coroutines
+    private var suggestionJob: Job? = null
+    private var searchJob: Job? = null
+
     // SharedPreferences to persist search history
-    private val sharedPreferences = application.getSharedPreferences("search_history", Context.MODE_PRIVATE)
+    private val sharedPreferences =
+        application.getSharedPreferences("search_history", Context.MODE_PRIVATE)
 
     // UI state variables using Compose mutable states
     var query = mutableStateOf("") // Current search query entered by the user
-    var searchResults = mutableStateOf(listOf<DictionaryEntry>()) // List of search results
-    var suggestions = mutableStateOf(listOf<Pair<Triple<DictionaryEntry, String?, String?>, String>>()) // List of suggestions
+    var searchResults =
+        MutableStateFlow<List<DictionaryEntry>>(emptyList()) // List of search results
+    val suggestions =
+        MutableStateFlow<List<Pair<Triple<DictionaryEntry, String?, String?>, String>>>(emptyList()) // List of suggestions
     var searchHistory = mutableStateOf(listOf<String>()) // User's search history
     var searchMode = mutableStateOf("ja") // Search mode: "ja" for Japanese, "en" for English
-    var kanjiSet = mutableStateOf(setOf<Char>()) // Set of unique Kanji characters extracted from text
+    var kanjiSet =
+        mutableStateOf(setOf<Char>()) // Set of unique Kanji characters extracted from text
     var isSelectionMode = mutableStateOf(false) // Flag for selection mode in search history
     var selectedItems = mutableStateListOf<String>() // List of selected items in search history
 
@@ -51,7 +62,8 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
      */
     fun searchWord(query: String) {
         this.query.value = query // Update the current query
-        viewModelScope.launch {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
             if (query.isEmpty()) {
                 searchResults.value = emptyList() // Clear results if query is empty
                 return@launch
@@ -106,7 +118,7 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
         withContext(Dispatchers.IO) {
             // Fetch exact and related matches from the database
             val exactResults = dao.searchExactEnglishFTS(query)
-            val relatedResults = dao.searchRelatedEnglish(query)
+            val relatedResults = dao.searchRelatedEnglishFTS(query)
 
             // Filter exact matches where glosses contain the exact query
             val exactMatches = exactResults.filter { entry ->
@@ -149,7 +161,8 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
      * Updates suggestions state with the results, prioritizing exact matches.
      */
     fun fetchSuggestions(query: String) {
-        viewModelScope.launch {
+        suggestionJob?.cancel()
+        suggestionJob = viewModelScope.launch {
             if (query.isEmpty()) {
                 suggestions.value = emptyList() // Clear suggestions if query is empty
                 return@launch
@@ -212,7 +225,7 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
         withContext(Dispatchers.IO) {
             // Fetch exact and related matches from the database
             val exactResults = dao.searchExactEnglishFTS(query)
-            val relatedResults = dao.searchRelatedEnglish(query)
+            val relatedResults = dao.searchRelatedEnglishFTS(query)
 
             // Filter exact matches where glosses contain the exact query
             val exactMatches = exactResults.filter { entry ->
@@ -251,7 +264,8 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
             return
         }
         viewModelScope.launch {
-            val query = kanji.firstOrNull()?.kanji ?: reading.firstOrNull()?.reading ?: return@launch
+            val query =
+                kanji.firstOrNull()?.kanji ?: reading.firstOrNull()?.reading ?: return@launch
             val relatedMatches = withContext(Dispatchers.IO) {
                 dao.searchRelatedMatches("%$query%", query)
             }
@@ -262,16 +276,20 @@ class DictionaryViewModel(application: Application) : AndroidViewModel(applicati
     // --- Data Retrieval Functions ---
 
     /** Retrieves kanji data for a specific entry ID. */
-    suspend fun getKanji(entryId: String): List<Kanji> = withContext(Dispatchers.IO) { dao.getKanji(entryId) }
+    suspend fun getKanji(entryId: String): List<Kanji> =
+        withContext(Dispatchers.IO) { dao.getKanji(entryId) }
 
     /** Retrieves reading data for a specific entry ID. */
-    suspend fun getReading(entryId: String): List<Reading> = withContext(Dispatchers.IO) { dao.getReading(entryId) }
+    suspend fun getReading(entryId: String): List<Reading> =
+        withContext(Dispatchers.IO) { dao.getReading(entryId) }
 
     /** Retrieves senses data for a specific entry ID. */
-    suspend fun getSenses(entryId: String): List<Sense> = withContext(Dispatchers.IO) { dao.getSenses(entryId) }
+    suspend fun getSenses(entryId: String): List<Sense> =
+        withContext(Dispatchers.IO) { dao.getSenses(entryId) }
 
     /** Retrieves examples for a specific sense ID. */
-    suspend fun getExamples(senseId: Int): List<Example> = withContext(Dispatchers.IO) { dao.getExamples(senseId) }
+    suspend fun getExamples(senseId: Int): List<Example> =
+        withContext(Dispatchers.IO) { dao.getExamples(senseId) }
 
     // --- Search History Functions ---
 

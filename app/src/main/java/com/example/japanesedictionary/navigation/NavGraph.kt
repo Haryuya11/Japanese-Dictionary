@@ -1,6 +1,7 @@
 package com.example.japanesedictionary.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -98,7 +99,7 @@ fun NavGraph(
             var query by remember { mutableStateOf(TextFieldValue("")) }
             // Giả sử viewModel.searchHistory và viewModel.suggestions là State hoặc Flow mà bạn có thể observe
             val searchHistory by remember { viewModel.searchHistory }
-            val suggestions by remember { viewModel.suggestions }
+            val suggestions by viewModel.suggestions.collectAsState()
             SearchScreen(
                 query = query,
                 onQueryChange = { newValue ->

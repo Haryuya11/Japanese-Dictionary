@@ -174,41 +174,31 @@ interface DictionaryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFTSEntries(entries: List<DictionaryFTS>)
 
-    // Related search for Japanese mode (containing query but not exact)
-    @Query(
-        """
-        SELECT * FROM dictionary_entries
-        WHERE id IN (
-            SELECT entryId FROM kanji WHERE kanji LIKE '%' || :query || '%' 
-            UNION
-            SELECT entryId FROM reading WHERE reading LIKE '%' || :query || '%'
-        )
-        AND id NOT IN (
-            SELECT entryId FROM kanji WHERE kanji = :query
-            UNION
-            SELECT entryId FROM reading WHERE reading = :query
-        )
-        LIMIT 50
-    """
-    )
-    suspend fun searchRelatedJapanese(query: String): List<DictionaryEntry>
-
     // Related search for English mode (containing query but not exact)
+    @Transaction
     @Query(
         """
-        SELECT * FROM dictionary_entries
-        WHERE id IN (
-            SELECT entryId FROM senses WHERE glosses LIKE '%' || :query || '%'
-        )
-        AND id NOT IN (
-            SELECT entryId FROM senses WHERE glosses = :query
-        )
-        LIMIT 50
+    SELECT * FROM dictionary_entries
+    WHERE id IN (
+        SELECT entryId FROM dictionary_fts 
+        WHERE 
+            -- Prefix match (start with query)
+            glosses MATCH :query || '*' OR 
+            -- Suffix match (end with query)
+            glosses MATCH '*' || :query OR 
+            -- Contains match (query anywhere)
+            glosses MATCH '*' || :query || '*'
+    )
+    AND id NOT IN (
+        SELECT entryId FROM senses WHERE glosses = :query
+    )
+    LIMIT 50
     """
     )
-    suspend fun searchRelatedEnglish(query: String): List<DictionaryEntry>
+    suspend fun searchRelatedEnglishFTS(query: String): List<DictionaryEntry>
 
     // **Truy vấn FTS cho kết quả khớp chính xác**
+    @Transaction
     @Query(
         """
         SELECT * FROM dictionary_entries
@@ -220,6 +210,7 @@ interface DictionaryDao {
     )
     suspend fun searchExactJapaneseFTS(query: String): List<DictionaryEntry>
 
+    @Transaction
     @Query(
         """
         SELECT * FROM dictionary_entries
@@ -231,6 +222,7 @@ interface DictionaryDao {
     )
     suspend fun searchExactEnglishFTS(query: String): List<DictionaryEntry>
 
+    @Transaction
     @Query(
         """
     SELECT * FROM dictionary_entries

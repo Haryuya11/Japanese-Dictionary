@@ -19,7 +19,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -34,6 +38,7 @@ import com.example.japanesedictionary.ui.components.SearchModeSwitch
 import com.example.japanesedictionary.ui.components.SuggestionsList
 import com.example.japanesedictionary.ui.components.SearchHistoryList
 import com.example.japanesedictionary.viewmodel.DictionaryViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun SearchScreen(
@@ -49,6 +54,15 @@ fun SearchScreen(
 ) {
     val isSelectionMode by viewModel.isSelectionMode
     val selectedCount = viewModel.selectedItems.size
+    var debouncedQuery by remember { mutableStateOf(query.text) }
+
+    LaunchedEffect(query.text) {
+        delay(300)
+        debouncedQuery = query.text
+        if (debouncedQuery.isNotEmpty()) {
+            viewModel.fetchSuggestions(query.text)
+        }
+    }
 
     Column {
         // Header: nếu đang ở chế độ selection (xóa history) thì hiển thị header chọn xóa,
