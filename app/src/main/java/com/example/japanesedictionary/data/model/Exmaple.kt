@@ -13,7 +13,7 @@ import androidx.room.PrimaryKey
         childColumns = ["senseId"],
         onDelete = ForeignKey.CASCADE
     )],
-    indices = [Index(value = ["senseId"])] // Thêm chỉ mục cho senseId
+    indices = [Index(value = ["senseId"])]
 )
 data class Example(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,

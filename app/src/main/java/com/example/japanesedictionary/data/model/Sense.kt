@@ -15,7 +15,7 @@ import com.example.japanesedictionary.utils.Converters
         childColumns = ["entryId"],
         onDelete = ForeignKey.CASCADE
     )],
-    indices = [Index(value = ["entryId"])] // Thêm chỉ mục cho entryId
+    indices = [Index(value = ["entryId"])]
 )
 @TypeConverters(Converters::class)
 data class Sense(

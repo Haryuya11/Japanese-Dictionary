@@ -73,34 +73,6 @@ interface DictionaryDao {
 
     @Query(
         """
-    SELECT * FROM dictionary_entries
-    WHERE id IN (
-        SELECT entryId FROM senses
-        WHERE glosses = :query
-    )
-    LIMIT 50
-    """
-    )
-    suspend fun searchExactEnglishMeaning(query: String): List<DictionaryEntry>
-
-    @Query(
-        """
-    SELECT * FROM dictionary_entries
-    WHERE id IN (
-        SELECT entryId FROM senses
-        WHERE (glosses LIKE :query || '%' OR glosses LIKE '% ' || :query || '%')
-          AND glosses != :exactQuery
-    )
-    LIMIT 50
-    """
-    )
-    suspend fun searchRelatedEnglishMeaning(
-        query: String,
-        exactQuery: String
-    ): List<DictionaryEntry>
-
-    @Query(
-        """
     SELECT k.entryId 
     FROM kanji k 
     JOIN reading r ON k.entryId = r.entryId 
@@ -202,63 +174,6 @@ interface DictionaryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFTSEntries(entries: List<DictionaryFTS>)
 
-    // Updated FTS Search Queries
-    @Query(
-        """
-        SELECT * FROM dictionary_entries
-        WHERE id IN (
-            SELECT entryId FROM dictionary_fts 
-            WHERE kanji MATCH :query OR reading_hiragana MATCH :query
-        )
-    """
-    )
-    suspend fun searchFTS(query: String): List<DictionaryEntry>
-
-    @Query(
-        """
-        SELECT * FROM dictionary_entries
-        WHERE id IN (
-            SELECT entryId FROM dictionary_fts 
-            WHERE kanji MATCH :query
-        )
-    """
-    )
-    suspend fun searchKanjiFTS(query: String): List<DictionaryEntry>
-
-    @Query(
-        """
-        SELECT * FROM dictionary_entries
-        WHERE id IN (
-            SELECT entryId FROM dictionary_fts 
-            WHERE reading_hiragana MATCH :query
-        )
-    """
-    )
-    suspend fun searchReadingFTS(query: String): List<DictionaryEntry>
-
-    @Query(
-        """
-        SELECT * FROM dictionary_entries
-        WHERE id IN (
-            SELECT entryId FROM dictionary_fts 
-            WHERE glosses MATCH :query
-        )
-    """
-    )
-    suspend fun searchGlossesFTS(query: String): List<DictionaryEntry>
-
-    @Query(
-        """
-        SELECT * FROM dictionary_entries
-        WHERE id IN (
-            SELECT entryId FROM kanji WHERE kanji = :query
-            UNION
-            SELECT entryId FROM reading WHERE reading = :query
-        )
-    """
-    )
-    suspend fun searchExactJapanese(query: String): List<DictionaryEntry>
-
     // Related search for Japanese mode (containing query but not exact)
     @Query(
         """
@@ -277,17 +192,6 @@ interface DictionaryDao {
     """
     )
     suspend fun searchRelatedJapanese(query: String): List<DictionaryEntry>
-
-    // Exact search for English mode (exact gloss match)
-    @Query(
-        """
-        SELECT * FROM dictionary_entries
-        WHERE id IN (
-            SELECT entryId FROM senses WHERE glosses = :query
-        )
-    """
-    )
-    suspend fun searchExactEnglish(query: String): List<DictionaryEntry>
 
     // Related search for English mode (containing query but not exact)
     @Query(
@@ -326,4 +230,30 @@ interface DictionaryDao {
     """
     )
     suspend fun searchExactEnglishFTS(query: String): List<DictionaryEntry>
+
+    @Query(
+        """
+    SELECT * FROM dictionary_entries
+    WHERE id IN (
+        SELECT entryId FROM dictionary_fts 
+        WHERE 
+            -- Prefix match (start with query)
+            kanji MATCH :query || '*' OR 
+            reading_hiragana MATCH :query || '*' OR
+            -- Suffix match (end with query)
+            kanji MATCH '*' || :query OR 
+            reading_hiragana MATCH '*' || :query OR
+            -- Contains match (query anywhere)
+            kanji MATCH '*' || :query || '*' OR 
+            reading_hiragana MATCH '*' || :query || '*'
+    )
+    AND id NOT IN (
+        SELECT entryId FROM kanji WHERE kanji = :query
+        UNION
+        SELECT entryId FROM reading WHERE reading = :query
+    )
+    LIMIT 50
+    """
+    )
+    suspend fun searchRelatedJapaneseFTS(query: String): List<DictionaryEntry>
 }

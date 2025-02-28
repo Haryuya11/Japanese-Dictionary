@@ -62,7 +62,7 @@ object XmlToRoomImporter {
             maxMemoryMB >= 512 -> 8000  // Nếu heap ≥ 512MB
             maxMemoryMB >= 256 -> 4000  // Nếu heap ≥ 256MB, tăng batch size lên cao hơn
             maxMemoryMB >= 128 -> 2000  // Nếu heap từ 128MB đến 255MB
-            maxMemoryMB >= 64  -> 1000  // Nếu heap từ 64MB đến 127MB
+            maxMemoryMB >= 64 -> 1000  // Nếu heap từ 64MB đến 127MB
             else -> 500
         }
     }
@@ -433,7 +433,7 @@ object XmlToRoomImporter {
                                     freq = freq,
                                     jlpt = jlpt,
                                     meanings = meanings.toList(),
-                                    fileSvgName = fileSvgName ?: ""
+                                    fileSvgName = fileSvgName
                                 )
                                 entries.add(ParsedKanjiEntry(kanjiEntry, readings.toList()))
                                 totalParsed++
@@ -482,6 +482,7 @@ object XmlToRoomImporter {
                 entry.readingList.map { Reading(entryId = entry.id, reading = it) }
             }
             dao.insertReadingList(readingList)
+
             val sensesWithExamples = mutableListOf<Pair<Sense, List<ParsedExample>>>()
             val allFields = mutableListOf<Pair<Int, String>>()
             entries.forEach { entry ->
@@ -529,11 +530,12 @@ object XmlToRoomImporter {
 
             // Insert into FTS table
             val ftsEntries = entries.map { parsedEntry ->
-                val kanjiText = parsedEntry.kanjiList.joinToString(" ")
-                val readingText = parsedEntry.readingList.joinToString(" ")
+                val kanjiText = parsedEntry.kanjiList.joinToString(" ") { tokenizeJapaneseText(it) }
+                val readingText =
+                    parsedEntry.readingList.joinToString(" ") { tokenizeJapaneseText(it) }
                 val readingHiraganaText = parsedEntry.readingList
                     .map { it.convertKatakanaToHiragana() }
-                    .joinToString(" ")
+                    .joinToString(" ") { tokenizeJapaneseText(it) }
                 val glossesText = parsedEntry.senses
                     .flatMap { it.glosses }
                     .joinToString(" ")

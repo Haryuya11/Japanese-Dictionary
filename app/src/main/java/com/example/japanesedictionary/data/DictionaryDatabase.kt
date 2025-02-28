@@ -25,9 +25,9 @@ import com.example.japanesedictionary.utils.Converters
         KanjiReading::class,
         SaveGroups::class,
         DictionaryGroupCrossRef::class,
-        DictionaryFTS::class // Added FTS entity
+        DictionaryFTS::class
     ],
-    version = 3, // Updated from 2 to 3
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -55,7 +55,8 @@ abstract class DictionaryDatabase : RoomDatabase() {
 
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("""
+                db.execSQL(
+                    """
                     CREATE VIRTUAL TABLE dictionary_fts USING fts4(
                         entryId TEXT,
                         kanji TEXT,
@@ -63,15 +64,18 @@ abstract class DictionaryDatabase : RoomDatabase() {
                         glosses TEXT,
                         tokenize=simple
                     )
-                """)
-                db.execSQL("""
+                """
+                )
+                db.execSQL(
+                    """
                     INSERT INTO dictionary_fts (entryId, kanji, reading, glosses)
                     SELECT de.id, k.kanji, r.reading, s.glosses
                     FROM dictionary_entries de
                     LEFT JOIN kanji k ON de.id = k.entryId
                     LEFT JOIN reading r ON de.id = r.entryId
                     LEFT JOIN senses s ON de.id = s.entryId
-                """)
+                """
+                )
             }
         }
 

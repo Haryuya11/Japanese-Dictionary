@@ -34,6 +34,20 @@ android {
             )
         }
     }
+
+    packaging{
+        resources{
+            excludes.add("META-INF/AL2.0")
+            excludes.add("META-INF/LGPL2.1")
+            excludes.add("META-INF/CONTRIBUTORS.md")
+            excludes.add("META-INF/LICENSE")
+            excludes.add("META-INF/LICENSE.txt")
+            excludes.add("META-INF/NOTICE")
+            excludes.add("META-INF/NOTICE.txt")
+            excludes.add("META-INF/LICENSE.md")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -96,6 +110,9 @@ dependencies {
     // StAX API
     implementation(libs.stax.api)
     implementation(libs.woodstox.core.asl)
+
+    // Kuromoji
+    implementation("com.atilika.kuromoji:kuromoji-ipadic:0.9.0")
 
 
     testImplementation(libs.junit)

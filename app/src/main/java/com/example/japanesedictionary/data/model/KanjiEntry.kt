@@ -23,7 +23,7 @@ data class KanjiEntry(
         childColumns = ["kanjiLiteral"],
         onDelete = ForeignKey.CASCADE
     )],
-    indices = [Index(value = ["kanjiLiteral"])] // Thêm chỉ mục cho kanjiLiteral
+    indices = [Index(value = ["kanjiLiteral"])]
 )
 data class KanjiReading(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,

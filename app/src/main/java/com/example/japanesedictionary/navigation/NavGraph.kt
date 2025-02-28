@@ -53,7 +53,6 @@ fun NavGraph(
             val viewModel = viewModel<DictionaryViewModel>(backStackEntry)
             DictionaryScreen(
                 navController = navController,
-                mainActivity = mainActivity,
                 dictionaryViewModel = viewModel
             )
         }
