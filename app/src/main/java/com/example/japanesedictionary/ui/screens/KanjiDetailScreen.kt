@@ -34,11 +34,22 @@ fun KanjiDetailScreen(
 ) {
     var kanjiEntry by remember { mutableStateOf<KanjiEntry?>(null) }
     var kanjiReadings by remember { mutableStateOf(listOf<KanjiReading>()) }
+    var svgExists by remember { mutableStateOf(false) } // Biến kiểm tra file SVG
 
     LaunchedEffect(kanjiLiteral) {
         kanjiViewModel.getKanjiEntry(kanjiLiteral) { fetchedKanjiEntry, fetchedKanjiReadings ->
             kanjiEntry = fetchedKanjiEntry
             kanjiReadings = fetchedKanjiReadings
+            fetchedKanjiEntry?.fileSvgName?.let { fileSvgName ->
+                try {
+                    // Kiểm tra file SVG trong thư mục assets
+                    mainActivity.assets.open("kanji_svg/$fileSvgName").close()
+                    svgExists = true
+                } catch (e: Exception) {
+                    // Nếu không mở được file, svgExists giữ giá trị false
+                    svgExists = false
+                }
+            }
         }
     }
 
@@ -50,14 +61,16 @@ fun KanjiDetailScreen(
         item {
             kanjiEntry?.let {
                 KanjiDetailCard(kanjiEntry = it, kanjiReadings = kanjiReadings)
-                it.fileSvgName?.let { fileSvgName ->
-                    KanjiStrokeCard(fileSvgName = fileSvgName)
+                // Chỉ hiển thị KanjiStrokeCard nếu file SVG tồn tại
+                if (svgExists) {
+                    it.fileSvgName?.let { fileSvgName ->
+                        KanjiStrokeCard(fileSvgName = fileSvgName)
+                    }
                 }
             }
         }
 
         kanjiEntry?.let {
-
             // Phần từ liên quan
             val onyomiReadings = kanjiReadings.filter { it.type == "ja_on" }
                 .map { it.reading.convertKatakanaToHiragana() }
@@ -75,7 +88,6 @@ fun KanjiDetailScreen(
                         mainActivity = mainActivity
                     )
                 }
-
             }
 
             if (kunyomiReadings.isNotEmpty()) {

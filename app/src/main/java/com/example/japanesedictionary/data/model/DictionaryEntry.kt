@@ -14,7 +14,7 @@ import androidx.room.PrimaryKey
         childColumns = ["entryId"],
         onDelete = ForeignKey.CASCADE
     )],
-    indices = [Index(value = ["entryId"])] // Thêm chỉ mục cho entryId
+    indices = [Index(value = ["entryId"])]
 )
 data class Kanji(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -30,7 +30,7 @@ data class Kanji(
         childColumns = ["entryId"],
         onDelete = ForeignKey.CASCADE
     )],
-    indices = [Index(value = ["entryId"])] // Thêm chỉ mục cho entryId
+    indices = [Index(value = ["entryId"])]
 )
 data class Reading(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
