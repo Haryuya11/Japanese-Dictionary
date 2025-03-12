@@ -7,16 +7,7 @@ import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import com.example.japanesedictionary.utils.Converters
 
-@Entity(
-    tableName = "senses",
-    foreignKeys = [ForeignKey(
-        entity = DictionaryEntry::class,
-        parentColumns = ["id"],
-        childColumns = ["entryId"],
-        onDelete = ForeignKey.CASCADE
-    )],
-    indices = [Index(value = ["entryId"])]
-)
+@Entity(tableName = "senses")
 @TypeConverters(Converters::class)
 data class Sense(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -37,27 +28,7 @@ data class Field(
     val name: String
 )
 
-@Entity(
-    primaryKeys = ["senseId", "fieldId"],
-    foreignKeys = [
-        ForeignKey(
-            entity = Sense::class,
-            parentColumns = ["id"],
-            childColumns = ["senseId"],
-            onDelete = ForeignKey.CASCADE
-        ),
-        ForeignKey(
-            entity = Field::class,
-            parentColumns = ["id"],
-            childColumns = ["fieldId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ],
-    indices = [
-        Index(value = ["senseId"]),
-        Index(value = ["fieldId"])
-    ]
-)
+@Entity(primaryKeys = ["senseId", "fieldId"])
 data class SenseFieldCrossRef(
     val senseId: Int,
     val fieldId: Int

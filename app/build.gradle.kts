@@ -20,7 +20,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         javaCompileOptions {
             annotationProcessorOptions {
-                arguments["room.schemaLocation"] = "$projectDir/schemas".toString()
+                arguments["room.schemaLocation"] = "$projectDir/schemas"
+                arguments["room.incremental"] = "true"
+                arguments["room.expandProjection"] = "true"
             }
         }
     }

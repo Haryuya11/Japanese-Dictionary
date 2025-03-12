@@ -12,27 +12,7 @@ data class SaveGroups(
     val createdAt: Long = System.currentTimeMillis()
 )
 
-@Entity(
-    primaryKeys = ["groupId", "entryId"],
-    foreignKeys = [
-        ForeignKey(
-            entity = SaveGroups::class,
-            parentColumns = ["id"],
-            childColumns = ["groupId"],
-            onDelete = ForeignKey.CASCADE
-        ),
-        ForeignKey(
-            entity = DictionaryEntry::class,
-            parentColumns = ["id"],
-            childColumns = ["entryId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ],
-    indices = [
-        Index(value = ["groupId"]),
-        Index(value = ["entryId"])
-    ]
-)
+@Entity(primaryKeys = ["groupId", "entryId"])
 data class DictionaryGroupCrossRef(
     val groupId: Int,
     val entryId: String

@@ -1,20 +1,9 @@
 package com.example.japanesedictionary.data.model
 
 import androidx.room.Entity
-import androidx.room.ForeignKey
-import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(
-    tableName = "examples",
-    foreignKeys = [ForeignKey(
-        entity = Sense::class,
-        parentColumns = ["id"],
-        childColumns = ["senseId"],
-        onDelete = ForeignKey.CASCADE
-    )],
-    indices = [Index(value = ["senseId"])]
-)
+@Entity(tableName = "examples")
 data class Example(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val senseId: Int,

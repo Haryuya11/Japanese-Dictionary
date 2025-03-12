@@ -57,12 +57,15 @@ object XmlToRoomImporter {
     // Ban đầu ta có hằng số, nhưng giờ sẽ dùng kích thước batch động
     private fun getDynamicBatchSize(): Int {
         val maxMemoryMB = Runtime.getRuntime().maxMemory() / (1024 * 1024)
+        Log.d("MemoryInfo", "Max heap memory: $maxMemoryMB MB")
+
+
         return when {
-            maxMemoryMB >= 1024 -> 16000  // Nếu heap ≥ 1GB
-            maxMemoryMB >= 512 -> 8000  // Nếu heap ≥ 512MB
-            maxMemoryMB >= 256 -> 4000  // Nếu heap ≥ 256MB, tăng batch size lên cao hơn
-            maxMemoryMB >= 128 -> 2000  // Nếu heap từ 128MB đến 255MB
-            maxMemoryMB >= 64 -> 1000  // Nếu heap từ 64MB đến 127MB
+            maxMemoryMB >= 1024 -> 16000
+            maxMemoryMB >= 512 -> 8000
+            maxMemoryMB >= 256 -> 4000
+            maxMemoryMB >= 128 -> 2000
+            maxMemoryMB >= 64 -> 1000
             else -> 500
         }
     }

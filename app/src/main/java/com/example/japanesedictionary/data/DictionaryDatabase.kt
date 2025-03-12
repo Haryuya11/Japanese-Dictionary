@@ -27,7 +27,7 @@ import com.example.japanesedictionary.utils.Converters
         DictionaryGroupCrossRef::class,
         DictionaryFTS::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -46,7 +46,7 @@ abstract class DictionaryDatabase : RoomDatabase() {
                     DictionaryDatabase::class.java,
                     "dictionary_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3) // Added new migration
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                 INSTANCE = instance
                 instance
@@ -83,6 +83,51 @@ abstract class DictionaryDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Drop the old FTS table; Room will recreate it based on DictionaryFTS entity
                 db.execSQL("DROP TABLE IF EXISTS dictionary_fts")
+            }
+        }
+
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Xóa và tạo lại các bảng không có foreign key
+                db.execSQL("DROP TABLE IF EXISTS kanji")
+                db.execSQL(
+                    """
+                    CREATE TABLE kanji (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        entryId TEXT,
+                        kanji TEXT
+                    )
+                """
+                )
+
+                db.execSQL("DROP TABLE IF EXISTS reading")
+                db.execSQL(
+                    """
+                    CREATE TABLE reading (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        entryId TEXT,
+                        reading TEXT
+                    )
+                """
+                )
+
+                db.execSQL("DROP TABLE IF EXISTS senses")
+                db.execSQL(
+                    """
+                    CREATE TABLE senses (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        entryId TEXT,
+                        pos TEXT,
+                        glosses TEXT,
+                        misc TEXT,
+                        stagk TEXT,
+                        stagr TEXT,
+                        xref TEXT,
+                        ant TEXT,
+                        sInf TEXT
+                    )
+                """
+                )
             }
         }
     }
